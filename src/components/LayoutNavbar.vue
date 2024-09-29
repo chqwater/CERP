@@ -32,6 +32,7 @@ const handleLogout = () => {
 
 <style scoped lang="scss">
 .navbar {
+  z-index: 1000;
   width: 100%;
   height: 70px;
   display: flex;

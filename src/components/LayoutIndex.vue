@@ -22,6 +22,7 @@ import LayoutMain from './LayoutMain.vue';
   display: flex;
   flex-direction: column;
   .footer {
+    z-index: 1000;
     height: 50px;
     width: 100%;
     display: flex;

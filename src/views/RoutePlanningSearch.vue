@@ -17,13 +17,22 @@
 			</div>
 		</div>
 		<div class="map-container">
-
+			<el-amap
+      :center="center"
+      :zoom="zoom"
+      @init="init"
+			:showLabel="false"
+    />
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import {ElAmap} from "@vuemap/vue-amap";
+
+const center = ref([112.578781, 37.813948]);
+const zoom = ref(12);
 
 const showRouteResult = ref(false);
 
@@ -88,6 +97,12 @@ const showRouteResult = ref(false);
 			}
 
 		}
+	}
+	.map-container {
+		width: 100%;
+		// height: calc(100vh - 130px);
+		height: 100%;
+		z-index: 0;
 	}
 }
 </style>
