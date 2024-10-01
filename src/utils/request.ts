@@ -1,49 +1,44 @@
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
-import { useUserStore } from '@/stores/user'
 
 const service = axios.create({
-  // baseURL: '/api'
+  baseURL: 'http://localhost:8080', // 设置基础URL为8080端口
+  timeout: 5000 // 设置超时时间
 })
 
 /**
- * 每次请求在 header 中带上 token
+ * Request interceptor
  */
 service.interceptors.request.use((config: any) => {
-  const userStore = useUserStore()
-  if (userStore.token) {
-    config.headers.token = userStore.token
-  }
+  config.headers['Content-Type'] = 'application/json';
   return config
 })
 
 /**
- * 拦截每一次响应，判断是否 token 失效
- * 如果 token 失效就退出登录并提示信息
+ * Response interceptor
+ * Simplify error handling
  */
 service.interceptors.response.use(response => {
   const res = response.data
-  const userStore = useUserStore()
 
-  // token 无效
-  if (res.code === 401) {
+  if (res.code !== 200) {
     ElMessage({
-      message: res.message || '页面长时间未使用，请重新登录',
-      type: 'warning',
-      duration: 5000
-    })
-    userStore.logout()
-    return Promise.reject(new Error(res.message || 'Error'))
-  } else if (res.code !== 200) {
-    ElMessage({
-      message: res.message || 'Error',
+      message: res.message || 'Error occurred',
       type: 'error',
       duration: 5000
     })
-    return Promise.reject(new Error(res.message || 'Error'))
+    return Promise.reject(new Error(res.message || 'Error occurred'))
   } else {
     return res
   }
+}, error => {
+  console.error('Request error', error)
+  ElMessage({
+    message: error.message || 'Network error',
+    type: 'error',
+    duration: 5000
+  })
+  return Promise.reject(error)
 })
 
 export default service

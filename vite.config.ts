@@ -9,10 +9,11 @@ export default defineConfig({
   // 连接后端服务时使用 server.proxy 设置代理
   // 当请求路径以 api 开头，说明调用的是真实后端服务
   server: {
+    port: 8081,
     proxy: {
       '^/api': {
-        target: 'http://localhost:3001',
-        rewrite: (path) => path.replace(/^\/api/, '')
+        target: 'http://localhost:8080',
+        rewrite: (path: any) => path.replace(/^\/api/, '')
       }
     }
   },

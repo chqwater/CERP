@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useUserStore } from '@/stores/user';
+// import { useUserStore } from '@/stores/user';
 
-const userStore = useUserStore()
+// const userStore = useUserStore()
 
-const handleLogout = () => {
-  userStore.logout()
-}
+// const handleLogout = () => {
+//   userStore.logout()
+// }
 </script>
 
 <template>
@@ -14,7 +14,7 @@ const handleLogout = () => {
       <img src="../asset/de_ik.png" height="70px">
     </a>
     <p style="font-size: 20px; font-weight: bold;">Cost-effective Route Planning System</p>
-    <div class="right-menu">
+    <!-- <div class="right-menu">
       <el-dropdown class="dropdown" trigger="click">
         <div class="el-dropdown-link">
           {{ userStore.name }}
@@ -26,7 +26,7 @@ const handleLogout = () => {
           <el-dropdown-item @click="handleLogout">Logout</el-dropdown-item>
         </template>
       </el-dropdown>
-    </div>
+    </div> -->
   </div>
 </template>
 

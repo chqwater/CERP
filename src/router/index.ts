@@ -1,8 +1,5 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import LayoutIndex from '@/components/LayoutIndex.vue'
-import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
-import { markRaw } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
 /**
  * 静态路由，与权限无关，所有用户都可以访问
@@ -43,51 +40,9 @@ export const constantRoutes = [
   }
 ]
 
-/**
- * 动态路由，配置了 roles 的路由，只有用户拥有该角色时可以访问
- */
-export const asyncRoutes = [
-  
-]
-
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(), // 如果使用哈希模式，可以用 createWebHashHistory()
   routes: constantRoutes
-})
-
-/**
- * 每次切换路由前执行
- * 如果没有 token，跳转到登录页
- * 如果有 token，进一步判断是否有角色，有角色就进入路由
- * 如果没有角色就获取角色，然后根据获取到的角色过滤动态路由
- * 最终将过滤后的动态路由添加到路由表中
- */
-router.beforeEach((to) => {
-  const token = sessionStorage.getItem('token')
-  const userStore = useUserStore()
-  const permissionStore = usePermissionStore()
-
-  if (token) {
-    if (to.path === '/login') {
-      return '/'
-    } else {
-      const hasRoles = userStore.roles && userStore.roles.length > 0
-
-      if (!hasRoles) {
-        return userStore.getUserInfo().then(({ roles }) => {
-          const accessedRoutes = permissionStore.generateRoutes(roles)
-          accessedRoutes.forEach((route: RouteRecordRaw) => {
-            router.addRoute(route)
-          })
-          return to.fullPath
-        })
-      }
-    }
-  } else {
-    if (to.path !== '/login') {
-      return '/login'
-    }
-  }
 })
 
 export default router
