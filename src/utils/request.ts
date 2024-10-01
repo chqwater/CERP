@@ -2,8 +2,8 @@ import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
 const service = axios.create({
-  baseURL: 'http://localhost:8080', // 设置基础URL为8080端口
-  timeout: 5000 // 设置超时时间
+  baseURL: 'http://localhost:8080', 
+  timeout: 5000 
 })
 
 /**

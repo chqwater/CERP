@@ -6,8 +6,8 @@ const router = useRouter()
 
 <template>
   <div class="page-container">
-    <div>哎呀，您访问的页面不存在，请点击下面的按钮返回首页。</div>
-    <el-button type="primary" @click="router.push('/')">回到首页</el-button>
+    <div>The page you are looking for does not exist.</div>
+    <el-button type="primary" @click="router.push('/')">Back to Home</el-button>
   </div>
 </template>
 

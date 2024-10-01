@@ -1,5 +1,5 @@
 <template>
-	<div class="container">
+	<div class="container" v-loading="loading" element-loading-text="Searching...">
 		<div class="left-bar">
 			<div class="left-head">
 				<el-segmented v-model="inputMode" :options="inputOptions" style="position: absolute; left:10px; top: 10px;"
@@ -36,23 +36,80 @@
 			</div>
 
 			<div class="route-result">
-				<div class="result" v-if="showRouteResult">{{ routeResult.routePath }}</div>
+				<div class="result" v-if="showRouteResult">
+					<div class="result-item" v-for="(item, index) in routeResult.routePath" :key="index">
+						<div v-if="index === 0" class="result-item-content">
+							<div class="result-point">
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+								<div style="background-color: gray; width:80%; height: 80px; border-radius: 50px; margin-left: 10%;"></div>
+							</div>
+							<div>
+								<div>Origin</div>
+								<div style="margin: 30px 0 0 10px; font-size: 20px;">Walk => {{ Math.round(item.duration) }}min</div>
+							</div>
+						</div>
+						<div v-else-if="index === routeResult.routePath.length - 1" class="result-item-content">
+							<div class="result-point">
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+								<div style="background-color: gray; width:80%; height: 60px; border-radius: 50px; margin-left: 10%;"></div>
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+							</div>
+							<div>
+								<div>{{ item.fromStation.stationName }}</div>
+								<div style="margin: 20px 0 20px 10px; font-size: 20px;">Walk => {{ Math.round(item.duration) }}min</div>
+								<div>Destination</div>
+							</div>
+						</div>
+						<div v-else-if="item.mode === 'WALK'" class="result-item-content">
+							<div class="result-point">
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+								<div style="background-color: gray; width:80%; height: 80px; border-radius: 50px; margin-left: 10%;"></div>
+							</div>
+							<div>
+								<div>{{ item.fromStation.stationName }}</div>
+								<div style="margin: 30px 0 0 10px; font-size: 20px;">Walk => {{ Math.round(item.duration) }}min</div>
+							</div>
+						</div>
+						<div v-else-if="item.route.lineType === 'BUS'" class="result-item-content">
+							<div class="result-point">
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+								<div style="background-color: Blue; width:80%; height: 80px; border-radius: 50px; margin-left: 10%;"></div>
+							</div>
+							<div>
+								<div>{{ item.fromStation.stationName }}</div>
+								<div style="margin: 30px 0 25px 10px; font-size: 20px;">Bus => {{ Math.round(item.duration) }}min</div>
+							</div>
+						</div>
+						<div v-else class="result-item-content">
+							<div class="result-point">
+								<div style="background-color: white; width:100%; border: 1px solid black; height:20px; border-radius: 50px;"></div>
+								<div style="background-color: red; width:80%; height: 80px; border-radius: 50px; margin-left: 10%;"></div>
+							</div>
+							<div>
+								<div>{{ item.fromStation.stationName }}</div>
+								<div style="margin: 30px 0 25px 10px; font-size: 20px;">Metro => {{ Math.round(item.duration) }}min</div>
+							</div>
+						</div>
+					</div>
+				</div>
 				<el-empty description="WELCOME! TRY TO SEARCH A ROUTE!" v-else/>
 			</div>
 		</div>
 		<div class="map-container">
-			<el-amap :center="center" :zoom="zoom" :showLabel="false" @click="handleMapClick" defaultCursor="Pointer" style="position: fixed;"/>
+			<el-amap :center="center" :zoom="zoom" :showLabel="false" @click="handleMapClick" defaultCursor="Pointer" style="position: fixed;">
+				<el-amap-polyline :path="routeResult.routeForMap" :visible="showRouteResult" :strokeWeight="5" :strokeOpacity="1" />
+			</el-amap>
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue';
-import { ElAmap } from "@vuemap/vue-amap";
+import { ElAmap, ElAmapPolyline } from "@vuemap/vue-amap";
 import { AddLocation, Pointer, Search } from '@element-plus/icons-vue';
 import { getFatestRoute, getCostEffectiveRoute } from '@/api/route';
-import { ElLoading } from 'element-plus';
 
+const loading = ref(false);
 const center = ref([112.578781, 37.813948]);
 const zoom = ref(12);
 const inputMode = ref('select on map');
@@ -75,8 +132,9 @@ const openFullScreen1 = () => {
   }, 2000)
 }
 const routeResult = reactive({
-	routePath: [],
-	totalCost: 0
+	routePath: [] as any[],
+	totalCost: 0,
+	routeForMap: [] as number[][]
 })
 const handleOnStartBtn = () => {
 	inputProp.onStart = true;
@@ -125,7 +183,15 @@ const handleMapClick = (e: any) => {
 	console.log("click on " + e.lnglat.lat + ", " + e.lnglat.lng)
 }
 
+const processResult = () => {
+	routeResult.routeForMap = routeResult.routePath.map(point => [point.startLon, point.startLat]);
+  const lastPoint = routeResult.routePath[routeResult.routePath.length - 1];
+  routeResult.routeForMap.push([lastPoint.endLon, lastPoint.endLat]);
+
+}
+
 const handleSearch = async () => {
+	loading.value = true;
 	if (inputMode.value === 'select on map') {
 		if (inputProp.startLat && inputProp.startLon && inputProp.endLat && inputProp.endLon) {
 			const res = await getCostEffectiveRoute({
@@ -136,8 +202,10 @@ const handleSearch = async () => {
 			}).then(res => {
 				routeResult.routePath = res.data.path;
 				routeResult.totalCost = res.data.totalCost;
+				processResult();
 			})
 			showRouteResult.value = true;
+			loading.value = false;
 			center.value = [112.578781, 37.813948];
 		}
 	}
@@ -229,6 +297,22 @@ const handleSearch = async () => {
 			height: 100%;
 			max-height: calc(100vh - 380px);
 			width: 100%;
+			.result{
+				display: flex;
+				flex-direction: column;
+				.result-item{
+					display: flex;
+					flex-direction: row;
+					width: 100%;
+					height: 100px;
+					margin: 0 10px 0 50px;
+					border-radius: 15px;
+					.result-item-content{
+						display: flex;
+						flex-direction: row;
+					}
+				}
+			}
 		}
 	}
 
@@ -239,6 +323,12 @@ const handleSearch = async () => {
 		z-index: 0;
 		margin-top: 70px;
 	}
+}
+.result-point{
+	display: flex; 
+	flex-direction: column; 
+	width:20px; 
+	margin-right: 10px;
 }
 
 .left-head .el-segmented {
