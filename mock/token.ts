@@ -7,7 +7,7 @@ export default [
     response() {
       return {
         code: 401,
-        message: '页面长时间未使用，请重新登录'
+        message: 'long time no use, please login again'
       }
     }
   }

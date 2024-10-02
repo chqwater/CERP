@@ -27,7 +27,7 @@ export default [
       if (!token) {
         return {
           code: 400,
-          message: '用户名或密码错误'
+          message: 'username or password error'
         }
       } else {
         return {

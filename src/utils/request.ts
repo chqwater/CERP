@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const service = axios.create({
   baseURL: 'http://localhost:8080', 
-  timeout: 5000 
+  timeout: 50000 
 })
 
 /**
@@ -25,7 +25,7 @@ service.interceptors.response.use(response => {
     ElMessage({
       message: res.message || 'Error occurred',
       type: 'error',
-      duration: 5000
+      duration: 50000
     })
     return Promise.reject(new Error(res.message || 'Error occurred'))
   } else {
