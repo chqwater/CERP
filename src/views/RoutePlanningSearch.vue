@@ -251,6 +251,7 @@
         @click="handleMapClick"
         defaultCursor="Pointer"
         style="position: fixed"
+        @init="init"
       >
         <el-amap-polyline
           :path="routeResult.routeForMap"
@@ -330,6 +331,20 @@ const destinationCoordinates = computed(() => {
   }
   return "";
 });
+let map = null;
+const init = (e) => {
+  map = e;
+}
+const addMarker = () => {
+  const markerStart = new AMap.Marker({
+    position: [inputProp.startLon, inputProp.startLat]
+  });
+  const markerEnd = new AMap.Marker({
+    position: [inputProp.endLon, inputProp.endLat]
+  });
+  map.add(markerStart);
+  map.add(markerEnd);
+}
 
 const handleMapClick = (e: any) => {
   if (inputProp.onStart) {
@@ -368,6 +383,7 @@ const handleCostEffectiveSearch = async () => {
       processResult();
     });
     showRouteResult.value = true;
+    addMarker();
     loading.value = false;
     center.value = [112.578781, 37.813948];
   }
