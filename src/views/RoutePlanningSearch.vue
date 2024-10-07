@@ -14,6 +14,7 @@
               disabled
               placeholder="Please select the Origin on map"
               :value="originCoordinates"
+              :class="{ 'input-active': inputProp.onStart }"
             />
             <el-button
               color="rgb(0, 72, 2)"
@@ -28,6 +29,7 @@
               disabled
               placeholder="Please select the Destination on map"
               :value="destinationCoordinates"
+              :class="{ 'input-active': inputProp.onEnd }"
             />
             <el-button
               color="rgb(0, 72, 2)"
@@ -80,6 +82,10 @@
 
       <div class="route-result">
         <div class="result" v-if="showRouteResult">
+          <div class="total-cost">
+            <div class="cost-item"><el-icon :size="22" style="margin-right: 5px"><Money /></el-icon> {{ routeResult.totalCost }} CNY</div>
+            <div class="cost-item"><el-icon :size="22" style="margin-right: 5px"><Timer /></el-icon> {{ routeResult.totalDuration }} min</div>
+          </div>
           <div
             class="result-item"
             v-for="(item, index) in routeResult.routePath"
@@ -267,8 +273,9 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from "vue";
 import { ElAmap, ElAmapPolyline } from "@vuemap/vue-amap";
-import { AddLocation, Pointer, Search } from "@element-plus/icons-vue";
+import { AddLocation, Search, Money, Timer} from "@element-plus/icons-vue";
 import { getFatestRoute, getCostEffectiveRoute } from "@/api/route";
+import { ElMessage } from "element-plus";
 
 const loading = ref(false);
 const center = ref([112.578781, 37.813948]);
@@ -284,21 +291,17 @@ const inputProp = reactive({
   startLon: null,
   endLat: null,
   endLon: null,
+  markerStart: null,
+  markerEnd: null
 });
 const resultMode = ref("Cost-effective");
 const resultModeOptions = ["Cost-effective", "Fastest"];
 
-const fullscreenLoading = ref(false);
-const openFullScreen1 = () => {
-  fullscreenLoading.value = true;
-  setTimeout(() => {
-    fullscreenLoading.value = false;
-  }, 2000);
-};
 const routeResult = reactive({
   routePath: [] as any[],
   totalCost: 0,
   routeForMap: [] as number[][],
+  totalDuration: 0
 });
 const handleOnStartBtn = () => {
   inputProp.onStart = true;
@@ -331,31 +334,53 @@ const destinationCoordinates = computed(() => {
   }
   return "";
 });
+
 let map = null;
+
 const init = (e) => {
   map = e;
 }
-const addMarker = () => {
-  const markerStart = new AMap.Marker({
+
+const addStartMarker = () => {
+  inputProp.markerStart = new AMap.Marker({
     position: [inputProp.startLon, inputProp.startLat]
   });
-  const markerEnd = new AMap.Marker({
+  map.add(inputProp.markerStart);
+}
+
+const addEndMarker = () => {
+  inputProp.markerEnd = new AMap.Marker({
     position: [inputProp.endLon, inputProp.endLat]
   });
-  map.add(markerStart);
-  map.add(markerEnd);
+  map.add(inputProp.markerEnd);
+}
+
+const removeStartMarker = () => {
+  map.remove(inputProp.markerStart);
+}
+
+const removeEndMarker = () => {
+  map.remove(inputProp.markerEnd);
 }
 
 const handleMapClick = (e: any) => {
   if (inputProp.onStart) {
+    if (inputProp.markerStart) {
+      removeStartMarker();
+    }
     inputProp.startLat = e.lnglat.lat;
     inputProp.startLon = e.lnglat.lng;
     inputProp.onStart = false;
+    addStartMarker();
   }
   if (inputProp.onEnd) {
+    if (inputProp.markerEnd) {
+      removeEndMarker();
+    }
     inputProp.endLat = e.lnglat.lat;
     inputProp.endLon = e.lnglat.lng;
     inputProp.onEnd = false;
+    addEndMarker();
   }
   console.log("click on " + e.lnglat.lat + ", " + e.lnglat.lng);
 };
@@ -367,6 +392,7 @@ const processResult = () => {
   ]);
   const lastPoint = routeResult.routePath[routeResult.routePath.length - 1];
   routeResult.routeForMap.push([lastPoint.endLon, lastPoint.endLat]);
+  routeResult.totalDuration = routeResult.routePath.reduce((sum, point) => sum + Math.round(point.duration), 0);
 };
 
 const handleCostEffectiveSearch = async () => {
@@ -383,13 +409,15 @@ const handleCostEffectiveSearch = async () => {
       processResult();
     });
     showRouteResult.value = true;
-    addMarker();
     loading.value = false;
     center.value = [112.578781, 37.813948];
   }
 };
 
 const handleFatsetSearch = async () => {
+  routeResult.routePath = [];
+  routeResult.totalCost = 0;
+  routeResult.totalDuration = 0;
   if (inputProp.startLat && inputProp.startLon && inputProp.endLat && inputProp.endLon) {
     loading.value = true;
     const res = await getFatestRoute({
@@ -485,6 +513,27 @@ const handleResultModeChange = (e:any)=>{
       .result {
         display: flex;
         flex-direction: column;
+        position: relative;
+        .total-cost {
+          margin: 10px 0 10px 10px;
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          .cost-item {
+            border-radius: 15px;
+            background-color: rgb(0, 72, 2);
+            height: 30px;
+            width: 100px;
+            color: white;
+            padding: 5px;
+            margin: 0 10px 0 10px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+          }
+        }
         .result-item {
           display: flex;
           flex-direction: row;
@@ -503,7 +552,6 @@ const handleResultModeChange = (e:any)=>{
 
   .map-container {
     width: 100%;
-    // height: calc(100vh - 130px);
     height: 100%;
     z-index: 0;
     margin-top: 70px;
@@ -520,5 +568,10 @@ const handleResultModeChange = (e:any)=>{
   --el-segmented-item-selected-color: white;
   --el-segmented-item-selected-bg-color: rgb(0, 72, 2);
   --el-border-radius-base: 16px;
+}
+
+.input-active :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 3px rgb(0, 72, 2);
+  border-radius: 4px;
 }
 </style>
